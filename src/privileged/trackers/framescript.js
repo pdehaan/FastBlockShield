@@ -1,19 +1,13 @@
 /* global XPCOMUtils, sendAsyncMessage, docShell */
 const {classes: Cc, interfaces: Ci} = Components;
 const trackerListener = {
-  QueryInterface: XPCOMUtils.generateQI(["nsIWebProgressListener", "nsISupportsWeakReference"]),
+  QueryInterface: ChromeUtils.generateQI(["nsIWebProgressListener", "nsISupportsWeakReference"]),
   onSecurityChange: function(webProgress, request, state) {
-    const isBlocking = state & Ci.nsIWebProgressListener.STATE_BLOCKED_TRACKING_CONTENT;
-    const isAllowing = state & Ci.nsIWebProgressListener.STATE_LOADED_TRACKING_CONTENT;
-    if (isBlocking || isAllowing) {
-      // There are trackers on this page.
+    // This information should only be stored on the top-level docshell, so we use that even in frames.
+    if (docShell.document.numTrackersFound > 0) {
       sendAsyncMessage("trackerStatus", {
-        content: true,
-      });
-    } else {
-      // There are no trackers on this page
-      sendAsyncMessage("trackerStatus", {
-        content: false,
+        trackersFound: docShell.document.numTrackersFound,
+        trackersBlocked: docShell.document.numTrackersBlocked,
       });
     }
   },
